@@ -1,8 +1,9 @@
 // ===============================================
-// 1. PARTICIPANTES (¡MODIFICA ESTA LISTA!)
-// Los nombres deben ser exactamente los que se introducirán en la web.
+// 1. CONFIGURACIÓN DEL SORTEO
 // ===============================================
-const participants = [
+
+// 🚨 LISTA COMPLETA DE PARTICIPANTES (SÓLO NOMBRES)
+const participantes = [
     "Mamen",
     "Luis",
     "Leles",
@@ -23,18 +24,12 @@ const participants = [
     "Adri",
     "Chuchi",
     "Jesus",
-    "Blanca",
-    // ¡Añade todos los participantes aquí!
+    "Blanca"
 ];
 
-// ===============================================
-// 2. RESTRICCIONES (¡MODIFICA ESTA LISTA!)
-// Define las parejas [REGALADOR, RECEPTOR] que NO pueden ser asignadas.
-// Ambos nombres deben coincidir *exactamente* con la lista de 'participants'.
-// Ejemplo: ["María", "Juan"] significa que María NO puede regalar a Juan.
-// ===============================================
-const restrictions = [
-    // Ejemplo de una pareja mutua:
+// RESTRICCIONES: Usa SÓLO los nombres limpios (sin códigos).
+// Formato: ["QUIEN REGALA", "A QUIEN NO PUEDE REGALAR"]
+const restricciones = [
     ["Mamen", "Maria"], 
     ["Luis", "Leles"],
     ["Luis", "Pablo"],
@@ -68,104 +63,150 @@ const restrictions = [
     ["Chuchi", ""],
     ["Jesus", "Blanca"],
     ["Blanca", "Jesus"],
-        
-    // Ejemplo de otra restricción:
-    // ["Luis", "Ana"],
+   // ¡Añade tus restricciones aquí!
 ];
 
-// Mapeamos las restricciones a minúsculas para facilitar la comprobación
-const normalizedRestrictions = restrictions.map(pair => 
-    [pair[0].toLowerCase(), pair[1].toLowerCase()]
-);
+// Datos globales para el sorteo
+let datosOrganizador = {}; // Almacenará { "CÓDIGO": { giver: 'Nombre', recipient: 'Destinatario' } }
 
-// 3. Lógica del Sorteo y Emparejamiento
-let assignments = {};
+// ===============================================
+// 2. LÓGICA DE FUNCIONAMIENTO Y SEGURIDAD
+// ===============================================
 
 /**
- * Verifica si una asignación [regalador, receptor] está prohibida.
- * @param {string} giver - Nombre del regalador (en minúsculas).
- * @param {string} receiver - Nombre del receptor (en minúsculas).
- * @returns {boolean} - True si la asignación está restringida, false en caso contrario.
+ * Genera una clave alfanumérica de 6 caracteres (letras mayúsculas y números).
  */
-function isRestricted(giver, receiver) {
-    // 1. Regla obligatoria: Nadie puede regalarse a sí mismo
-    if (giver === receiver) {
-        return true;
+function generarClaveSeisCaracteres() {
+    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let resultado = '';
+    const longitudCaracteres = caracteres.length;
+    for (let i = 0; i < 6; i++) {
+        resultado += caracteres.charAt(Math.floor(Math.random() * longitudCaracteres));
     }
-    // 2. Comprobar restricciones personalizadas
-    return normalizedRestrictions.some(([rGiver, rReceiver]) => 
-        rGiver === giver && rReceiver === receiver
-    );
+    return resultado;
 }
 
 /**
- * Función para realizar el sorteo de forma segura, respetando todas las restricciones.
+ * Normaliza el texto (minúsculas, sin espacios extra).
  */
-function runDraw() {
-    let success = false;
-    let attempts = 0;
-    const MAX_ATTEMPTS = 1000; // Intentamos 1000 veces antes de fallar
+function normalizar(nombre) {
+    return nombre.trim().toLowerCase();
+}
 
-    // El bucle 'while' asegura que si la asignación falla, se reintenta con otro orden
-    while (!success && attempts < MAX_ATTEMPTS) {
-        attempts++;
-        
-        // Usamos una copia en minúsculas para la lógica interna
-        const givers = [...participants].map(p => p.toLowerCase());
-        let receivers = [...participants];
-        
-        // Barajamos la lista de receptores (algoritmo Fisher-Yates)
-        for (let i = receivers.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [receivers[i], receivers[j]] = [receivers[j], receivers[i]];
-        }
-        
-        success = true; // Asumimos éxito al inicio
-        let tempReceivers = [...receivers]; 
-        let tempAssignments = {};
+/**
+ * Comprueba si una asignación [regalador, receptor] es válida.
+ */
+function esValido(regalador, receptor) {
+    const regaladorNorm = normalizar(regalador);
+    const receptorNorm = normalizar(receptor);
 
-        // 1. Asignamos a cada regalador
-        for (let i = 0; i < givers.length; i++) {
-            const giver = givers[i];
-            let assigned = false;
+    // Regla 1: Nadie puede regalarse a sí mismo
+    if (regaladorNorm === receptorNorm) return false;
 
-            // 2. Buscamos el primer receptor válido y disponible
-            for (let j = 0; j < tempReceivers.length; j++) {
-                const receiver = tempReceivers[j];
-                
-                // Si la asignación NO rompe ninguna restricción
-                if (!isRestricted(giver, receiver.toLowerCase())) {
-                    tempAssignments[giver] = receiver;
-                    tempReceivers.splice(j, 1); // Removemos al receptor de la lista de disponibles
-                    assigned = true;
-                    break;
-                }
-            }
+    // Regla 2: Revisar las restricciones manuales
+    const estaProhibido = restricciones.some(par => {
+        const regaladorRestringido = normalizar(par[0]);
+        const receptorRestringido = normalizar(par[1]);
+        return regaladorRestringido === regaladorNorm && receptorRestringido === receptorNorm;
+    });
+
+    return !estaProhibido;
+}
+
+/**
+ * Algoritmo recursivo que busca una solución válida (Backtracking).
+ */
+function resolverSorteo(indiceRegalador, receptoresDisponibles, asignacionesTemporales) {
+    if (indiceRegalador === participantes.length) {
+        return true; // Éxito, todos han sido asignados
+    }
+
+    const regaladorActual = participantes[indiceRegalador];
+    const regaladorActualNorm = normalizar(regaladorActual);
+
+    for (let i = 0; i < receptoresDisponibles.length; i++) {
+        const receptorPotencial = receptoresDisponibles[i];
+
+        if (esValido(regaladorActual, receptorPotencial)) {
             
-            // Si no se pudo asignar al regalador actual
-            if (!assigned) {
-                success = false; // El intento falla
-                break; 
+            asignacionesTemporales[regaladorActualNorm] = receptorPotencial; 
+            
+            const proximosReceptoresDisponibles = receptoresDisponibles.filter((_, idx) => idx !== i);
+
+            if (resolverSorteo(indiceRegalador + 1, proximosReceptoresDisponibles, asignacionesTemporales)) {
+                return true; // Si el siguiente paso funciona, devolvemos éxito
             }
+
+            delete asignacionesTemporales[regaladorActualNorm]; // Backtracking: deshacemos la asignación
         }
+    }
+
+    return false; // No se encontró una solución para este regalador en este camino
+}
+
+/**
+ * Muestra la tabla secreta en la consola para el organizador.
+ */
+function mostrarDatosOrganizador() {
+    console.log("========================================================");
+    console.log("🔒 DATOS SECRETOS DEL SORTEO (PARA EL ORGANIZADOR) 🔒");
+    console.log("========================================================");
+    console.table(Object.entries(datosOrganizador).map(([codigo, datos]) => ({
+        "Código Secreto": codigo,
+        "Participante": datos.giver,
+        "Regala a": datos.recipient
+    })));
+    console.log("INSTRUCCIONES: Copia esta tabla y distribuye el 'Código Secreto' a cada 'Participante'.");
+    console.log("El formato de acceso en la web es: Nombre Código (Ejemplo: Mamen N7B4X2)");
+    console.log("========================================================");
+}
+
+/**
+ * Función principal: Ejecuta el sorteo, genera los códigos y muestra los datos.
+ */
+function ejecutarSorteo() {
+    console.log("Iniciando sorteo con códigos aleatorios...");
+    let asignacionesTemporales = {};
+    datosOrganizador = {};
+
+    let receptoresBarajados = [...participantes];
+    // Barajar los receptores para aleatorizar el resultado
+    for (let i = receptoresBarajados.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [receptoresBarajados[i], receptoresBarajados[j]] = [receptoresBarajados[j], receptoresBarajados[i]];
+    }
+
+    const exito = resolverSorteo(0, receptoresBarajados, asignacionesTemporales);
+
+    if (exito) {
+        // Generar códigos únicos para la estructura final
+        Object.keys(asignacionesTemporales).forEach(regaladorNorm => {
+            let clave = generarClaveSeisCaracteres();
+            
+            // Asegurar que la clave sea única
+            while (datosOrganizador.hasOwnProperty(clave)) {
+                 clave = generarClaveSeisCaracteres();
+            }
+
+            const regaladorOriginal = participantes.find(p => normalizar(p) === regaladorNorm); 
+
+            datosOrganizador[clave] = {
+                giver: regaladorOriginal,
+                recipient: asignacionesTemporales[regaladorNorm],
+            };
+        });
         
-        if (success) {
-            assignments = tempAssignments; // Guardamos el resultado exitoso
-        }
+        mostrarDatosOrganizador();
+    } else {
+        console.error("ERROR CRÍTICO: Las restricciones impiden una solución matemática.");
+        alert("¡Atención! Las restricciones son matemáticamente imposibles de resolver. Por favor, elimina alguna restricción.");
     }
-
-    if (attempts >= MAX_ATTEMPTS) {
-        // Esto indica que las restricciones hacen imposible el sorteo
-        console.error("ERROR CRÍTICO: No se pudo realizar el sorteo. ¡Las restricciones impiden una combinación válida!");
-        assignments = {}; // Asegurar que no haya asignaciones parciales
-    }
-
-    console.log(`Sorteo realizado en ${attempts} intentos.`);
 }
 
 // ===============================================
-// 4. Manejo de la Interfaz y Eventos
+// 3. INTERFÍCIE (DOM)
 // ===============================================
+
 const form = document.getElementById('draw-form');
 const nameInput = document.getElementById('name-input');
 const resultArea = document.getElementById('result-area');
@@ -173,37 +214,66 @@ const messageArea = document.getElementById('message-area');
 const yourNameDisplay = document.getElementById('your-name');
 const recipientNameDisplay = document.getElementById('recipient-name-display');
 
+// Implementación de Confeti (asegúrate de incluir el CDN en index.html)
+function launchConfetti() {
+    const base = {
+        origin: { y: 0.7 },
+        angle: 60,
+        spread: 55,
+        ticks: 150,
+        startVelocity: 30
+    };
+    // confetti es la función global de la librería
+    if (typeof confetti === 'function') {
+        confetti({ ...base, particleCount: 50, angle: 60, colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'] });
+        confetti({ ...base, particleCount: 50, angle: 120, colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'] });
+    }
+}
 
-// Ejecutar el sorteo la primera vez que se carga la página
-runDraw();
 
-    // Limpiar mensajes y resultados anteriores
+// Ejecutar sorteo al cargar la página
+ejecutarSorteo();
+
+form.addEventListener('submit', function(event) {
+    event.preventDefault();
+    
     resultArea.classList.add('hidden');
     messageArea.textContent = '';
     
-    const submittedName = nameInput.value.trim();
-    // Normalizamos la entrada a minúsculas para buscar en 'assignments'
-    const normalizedName = submittedName.toLowerCase();
-
-    // 1. Comprobar si el nombre existe en el sorteo
-    if (assignments.hasOwnProperty(normalizedName)) {
+    const entradaCompleta = nameInput.value.trim();
+    // Dividir la entrada por espacios
+    const partes = entradaCompleta.split(/\s+/); 
+    
+    // Comprobar si hay nombre y código
+    if (partes.length < 2) {
+        messageArea.textContent = `Formato incorrecto. Debe ser: TU NOMBRE y luego el CÓDIGO (separados por un espacio).`;
+        return;
+    }
+    
+    // 1. Separar y normalizar
+    const codigoEntrada = partes.pop().trim().toUpperCase(); // La última parte es el código
+    const nombreEntradaNorm = partes.join(' ').trim().toLowerCase(); // La resta es el nombre (normalizado)
+    
+    // 2. Buscar el código en la base de datos segura
+    if (datosOrganizador.hasOwnProperty(codigoEntrada)) {
+        const asignacion = datosOrganizador[codigoEntrada];
+        const nombreAsignadoNorm = normalizar(asignacion.giver); 
         
-        const recipient = assignments[normalizedName];
-
-        // Mostrar el resultado en el HTML
-        yourNameDisplay.textContent = submittedName; 
-        recipientNameDisplay.textContent = recipient;
-        resultArea.classList.remove('hidden');
-        nameInput.value = ''; // Limpiar input después de mostrar
-
-    } else {
-        // Mostrar error si el nombre no está en la lista o si hubo un error crítico
-        let message = `El nombre "${submittedName}" no está en la lista. Revisa la ortografía.`;
-        
-        if (Object.keys(assignments).length === 0) {
-            message = "¡Error en el sorteo! El organizador debe revisar las restricciones, son demasiado limitantes.";
+        // 3. Verificar que el nombre introducido coincida con el nombre asociado al código
+        if (nombreEntradaNorm === nombreAsignadoNorm) {
+            
+            yourNameDisplay.textContent = asignacion.giver; 
+            recipientNameDisplay.textContent = asignacion.recipient;
+            resultArea.classList.remove('hidden');
+            
+            // Lanzar confeti (si la librería está cargada)
+            launchConfetti();
+            
+            nameInput.value = ''; 
+        } else {
+            messageArea.textContent = `El nombre que has introducido no coincide con el código secreto.`;
         }
-        
-        messageArea.textContent = message;
+    } else {
+        messageArea.textContent = `Código secreto incorrecto o no encontrado.`;
     }
 });
