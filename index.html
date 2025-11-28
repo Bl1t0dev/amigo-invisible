@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo Amigo Invisible 🎁</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>¡Sorteo del Amigo Invisible!</h1>
+        <p>Introduce tu nombre para descubrir a quién le tienes que regalar.</p>
+
+        <form id="draw-form">
+            <label for="name-input">Tu Nombre:</label>
+            <input type="text" id="name-input" placeholder="Escribe aquí tu nombre completo" required>
+            <button type="submit">¡Descubrir!</button>
+        </form>
+
+        <div id="result-area" class="hidden">
+            <h2>¡Felicitaciones!</h2>
+            <p><strong><span id="your-name"></span></strong>, tu Amigo Invisible es:</p>
+            <div class="recipient-name">
+                <span id="recipient-name-display"></span>
+            </div>
+        </div>
+
+        <p id="message-area" class="error-message"></p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
