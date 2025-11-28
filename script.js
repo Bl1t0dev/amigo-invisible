@@ -177,58 +177,6 @@ const recipientNameDisplay = document.getElementById('recipient-name-display');
 // Ejecutar el sorteo la primera vez que se carga la página
 runDraw();
 
-/**
- * Lanza un hermoso chorro de confeti festivo
- */
-function launchConfetti() {
-    // Definición de la base (la función global 'confetti' ahora está disponible)
-    const base = {
-        origin: { y: 0.7 }, // Lanza desde la parte inferior
-        angle: 60,
-        spread: 55,
-        ticks: 150,
-        startVelocity: 30
-    };
-
-    // Lanza el primer chorro (desde la izquierda)
-    confetti({
-        ...base, // Usamos la configuración base
-        particleCount: 50,
-        angle: 60,
-        colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a'] // Colores festivos
-    });
-
-    // Lanza el segundo chorro (desde la derecha)
-    confetti({
-        ...base,
-        particleCount: 50,
-        angle: 120,
-        colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6a']
-    });
-}
-
-// Evento al enviar el formulario
-form.addEventListener('submit', function(event) {
-    event.preventDefault(); // Evita que la página se recargue
-
-    // Comprobamos si el nombre existe en las asignaciones
-    if (finalAssignments.hasOwnProperty(normalizedInput)) {
-        const recipient = finalAssignments[normalizedInput];
-        
-        yourNameDisplay.textContent = inputName;
-        recipientNameDisplay.textContent = recipient;
-        resultArea.classList.remove('hidden');
-        
-        // =====================================
-        // ¡LLAMADA AL CONFETI AQUÍ!
-        // =====================================
-        launchConfetti(); 
-        // =====================================
-        
-        nameInput.value = ''; 
-    } else {
-    //
-        
     // Limpiar mensajes y resultados anteriores
     resultArea.classList.add('hidden');
     messageArea.textContent = '';
