@@ -2,6 +2,11 @@
 // 1. CONFIGURACIÓN DEL SORTEO
 // ===============================================
 
+// 🚨 PEGA AQUÍ LA CADENA JSON QUE COPIASTE EN EL PASO 1.
+// NOTA: Debe ser una cadena de texto (rodeada de comillas simples ' o dobles ").
+const SORTEO_DEFINITIVO_JSON = '{"M0VS56":{"giver":"Mamen","recipient":"Bastian"},"GRP3CS":{"giver":"Luis","recipient":"Blanca"},"729LBY":{"giver":"Leles","recipient":"Nuria"},"KYT8I1":{"giver":"Pablo","recipient":"Foni"},"B6993S":{"giver":"Carlos","recipient":"Maria"},"YT8IXX":{"giver":"Paloma","recipient":"Carlos"},"I9S2R9":{"giver":"Andrea","recipient":"Adri"},"3M53TE":{"giver":"Alika","recipient":"Nano"},"OSOH85":{"giver":"Nano","recipient":"Chuchi"},"CHNKCI":{"giver":"Bea","recipient":"Javi"},"HKNH79":{"giver":"Bastian","recipient":"Marta"},"TOJ9TW":{"giver":"Foni","recipient":"Bea"},"HB2JXH":{"giver":"Nuria","recipient":"Sara"},"VPJWXL":{"giver":"Sara","recipient":"Alika"},"FINE0R":{"giver":"Javi","recipient":"Pablo"},"XI4H3S":{"giver":"Maria","recipient":"Paloma"},"WLPLVY":{"giver":"Marta","recipient":"Leles"},"5E9S8S":{"giver":"Adri","recipient":"Mamen"},"ARFY2Q":{"giver":"Chuchi","recipient":"Jesus"},"ZCWNJF":{"giver":"Jesus","recipient":"Luis"},"33RMGL":{"giver":"Blanca","recipient":"Andrea"}}'
+// Ejemplo: Tu código copiado reemplaza este JSON de ejemplo. Asegúrate de que está entre comillas.
+
 // 🚨 LISTA COMPLETA DE PARTICIPANTES (SÓLO NOMBRES)
 const participantes = [
     "Mamen",
